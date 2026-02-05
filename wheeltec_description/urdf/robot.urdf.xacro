@@ -7,26 +7,25 @@
   <!-- ============================================================ -->
   
   <!-- 底盘尺寸 -->
-  <xacro:property name="base_length" value="0.30"/>    <!-- 底盘长度 (m) -->
-  <xacro:property name="base_width" value="0.26"/>     <!-- 底盘宽度 (m) -->
-  <xacro:property name="base_height" value="0.10"/>    <!-- 底盘高度 (m) -->
+  <xacro:property name="base_length" value="0.50"/>    <!-- 底盘长度 (m) -->
+  <xacro:property name="base_width" value="0.43"/>     <!-- 底盘宽度 (m) -->
+  <xacro:property name="base_height" value="0.15"/>    <!-- 底盘高度 (m) -->
   
-  <!-- 轮子参数 -->
-  <xacro:property name="wheel_radius" value="0.05"/>   <!-- 轮子半径 (m) -->
-  <xacro:property name="wheel_width" value="0.04"/>    <!-- 轮子宽度 (m) -->
-  <xacro:property name="wheel_separation" value="0.30"/>  <!-- 轮距 (m) -->
-  <xacro:property name="wheel_base" value="0.25"/>     <!-- 轴距 (m) -->
+  <!-- 轮子参数 (根据 robot_params.hpp 更新) -->
+  <xacro:property name="wheel_radius" value="0.075"/>  <!-- 轮子半径 (m) = 直径0.15/2 -->
+  <xacro:property name="wheel_width" value="0.06"/>    <!-- 轮子宽度 (m) -->
+  <xacro:property name="wheel_separation" value="0.50"/>  <!-- 轮距 (m) -->
+  <xacro:property name="wheel_base" value="0.43"/>     <!-- 轴距 (m) -->
   
   <!-- 激光雷达安装位置（相对于base_link） -->
-  <!-- TODO: 根据实际安装位置修改 -->
-  <xacro:property name="lidar_x" value="0.0"/>         <!-- X方向偏移 (m) -->
-  <xacro:property name="lidar_y" value="0.0"/>         <!-- Y方向偏移 (m) -->
-  <xacro:property name="lidar_z" value="0.20"/>        <!-- Z方向偏移 (m) -->
+  <xacro:property name="lidar_x" value="-0.20"/>       <!-- X方向偏移 (m) 向后20cm -->
+  <xacro:property name="lidar_y" value="-0.05"/>       <!-- Y方向偏移 (m) 向右5cm -->
+  <xacro:property name="lidar_z" value="0.25"/>        <!-- Z方向偏移 (m) -->
   
   <!-- IMU安装位置（相对于base_link） -->
   <xacro:property name="imu_x" value="0.0"/>
   <xacro:property name="imu_y" value="0.0"/>
-  <xacro:property name="imu_z" value="0.05"/>
+  <xacro:property name="imu_z" value="0.075"/>
 
   <!-- ============================================================ -->
   <!-- 材质定义 -->
@@ -47,6 +46,10 @@
   <material name="red">
     <color rgba="0.8 0.2 0.2 1"/>
   </material>
+  
+  <material name="green">
+    <color rgba="0.2 0.8 0.2 1"/>
+  </material>
 
   <!-- ============================================================ -->
   <!-- base_footprint - 地面投影坐标系 -->
@@ -66,13 +69,17 @@
   
   <link name="base_link">
     <visual>
-      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <!-- 使用 STL 模型文件 -->
+      <!-- 注意: scale="0.001" 表示 STL 单位是 mm，转换为 m -->
+      <!-- Z 轴偏移 +0.075m，绕 Z 轴旋转 90 度 (pi/2 = 1.5708 rad) -->
+      <origin xyz="0 0 0.075" rpy="0 0 1.5708"/>
       <geometry>
-        <box size="${base_length} ${base_width} ${base_height}"/>
+        <mesh filename="package://wheeltec_description/meshes/model3.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="grey"/>
+      <material name="green"/>
     </visual>
     <collision>
+      <!-- 碰撞使用简化的盒子模型，提高性能 -->
       <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
       <geometry>
         <box size="${base_length} ${base_width} ${base_height}"/>
@@ -80,8 +87,8 @@
     </collision>
     <inertial>
       <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
-      <mass value="5.0"/>
-      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05"/>
+      <mass value="10.0"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
     </inertial>
   </link>
 
@@ -91,13 +98,8 @@
   
   <xacro:macro name="wheel" params="prefix x_reflect y_reflect">
     <link name="${prefix}_wheel_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
-        <geometry>
-          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
-        </geometry>
-        <material name="black"/>
-      </visual>
+      <!-- 不显示轮子视觉模型，因为 STL 模型已经包含轮子 -->
+      <!-- 只保留碰撞和惯性属性用于物理仿真 -->
       <collision>
         <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
         <geometry>

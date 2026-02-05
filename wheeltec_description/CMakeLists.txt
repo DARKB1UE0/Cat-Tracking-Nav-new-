@@ -19,4 +19,10 @@ install(DIRECTORY meshes/
   OPTIONAL
 )
 
+# Install rviz config files
+install(DIRECTORY rviz/
+  DESTINATION share/${PROJECT_NAME}/rviz
+  OPTIONAL
+)
+
 ament_package()
