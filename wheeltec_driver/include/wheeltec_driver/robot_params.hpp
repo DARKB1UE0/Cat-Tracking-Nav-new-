@@ -16,19 +16,19 @@ namespace wheeltec_driver
 // 轮距（左右轮之间的距离）单位：米
 // TODO: 请根据实际机器人测量并修改此值
 #ifndef ROBOT_WHEEL_SEPARATION
-#define ROBOT_WHEEL_SEPARATION 0.30
+#define ROBOT_WHEEL_SEPARATION 0.50
 #endif
 
 // 轴距（前后轮之间的距离）单位：米
 // TODO: 请根据实际机器人测量并修改此值
 #ifndef ROBOT_WHEEL_BASE
-#define ROBOT_WHEEL_BASE 0.25
+#define ROBOT_WHEEL_BASE 0.43
 #endif
 
 // 轮子直径，单位：米
 // TODO: 请根据实际机器人测量并修改此值
 #ifndef ROBOT_WHEEL_DIAMETER
-#define ROBOT_WHEEL_DIAMETER 0.10
+#define ROBOT_WHEEL_DIAMETER 0.15
 #endif
 
 // ----------------------------------------------------------------------------
