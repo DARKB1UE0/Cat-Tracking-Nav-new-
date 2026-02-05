@@ -1,0 +1,37 @@
+# 驱动节点参数配置
+wheeltec_driver_node:
+  ros__parameters:
+    # 串口配置
+    # TODO: 根据实际设备修改串口路径
+    serial_port: "/dev/ttyUSB0"
+    baudrate: 115200
+
+    # 坐标系配置
+    odom_frame: "odom"
+    base_frame: "base_link"
+    imu_frame: "imu_link"
+
+    # 控制参数
+    control_rate: 50.0      # 控制频率 (Hz)
+    cmd_vel_timeout: 0.5    # 速度指令超时时间 (秒)
+    publish_tf: true        # 是否发布 odom -> base_link 的TF
+
+    # 机器人参数
+    # TODO: 根据实际机器人测量并修改以下参数
+    wheel_separation: 0.30   # 轮距（左右轮之间的距离）(米)
+    wheel_base: 0.25         # 轴距（前后轮之间的距离）(米)
+    wheel_diameter: 0.10     # 轮子直径 (米)
+
+    # 速度限制
+    max_linear_velocity: 1.0   # 最大线速度 (m/s)
+    max_angular_velocity: 3.14 # 最大角速度 (rad/s)
+
+    # IMU参数
+    # TODO: 根据实际IMU型号调整比例因子
+    # 加速度计比例因子：原始值 * imu_accel_scale = m/s^2
+    # 假设量程为8g，16位ADC
+    imu_accel_scale: 0.00239  # 9.8 * 8 / 32768
+    
+    # 陀螺仪比例因子：原始值 * imu_gyro_scale = rad/s
+    # 假设量程为2000 deg/s，16位ADC
+    imu_gyro_scale: 0.00106   # 2000 * 0.0174533 / 32768
