@@ -18,9 +18,10 @@
   <xacro:property name="wheel_base" value="0.43"/>     <!-- 轴距 (m) -->
   
   <!-- 激光雷达安装位置（相对于base_link） -->
+  <!-- 雷达在车辆后方(-X方向)，距地面30cm（base_link在7.5cm，所以相对Z=22.5cm） -->
   <xacro:property name="lidar_x" value="-0.20"/>       <!-- X方向偏移 (m) 向后20cm -->
-  <xacro:property name="lidar_y" value="-0.05"/>       <!-- Y方向偏移 (m) 向右5cm -->
-  <xacro:property name="lidar_z" value="0.25"/>        <!-- Z方向偏移 (m) -->
+  <xacro:property name="lidar_y" value="0.0"/>         <!-- Y方向偏移 (m) -->
+  <xacro:property name="lidar_z" value="0.225"/>       <!-- Z方向偏移 (m) 距地面30cm -->
   
   <!-- IMU安装位置（相对于base_link） -->
   <xacro:property name="imu_x" value="0.0"/>
@@ -155,7 +156,8 @@
   <joint name="laser_joint" type="fixed">
     <parent link="base_link"/>
     <child link="laser_frame"/>
-    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 0"/>
+    <!-- X轴旋转180度修复上下颠倒，Z轴旋转180度调整扫描方向 -->
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="${pi} 0 ${pi}"/>
   </joint>
 
   <!-- ============================================================ -->

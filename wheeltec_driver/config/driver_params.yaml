@@ -8,7 +8,7 @@ wheeltec_driver_node:
 
     # 坐标系配置
     odom_frame: "odom"
-    base_frame: "base_link"
+    base_frame: "base_footprint"  # 驱动发布 odom→base_footprint，URDF 提供 base_footprint→base_link
     imu_frame: "imu_link"
 
     # 控制参数

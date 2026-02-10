@@ -170,7 +170,7 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ros2 launch wheeltec_bringup bringup.launch.py mode:=slam
 
 # 在另一个终端，使用键盘遥控小车移动建图
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+ros2 run wheeltec_bringup teleop_keyboard.py
 ```
 
 键盘控制说明：
@@ -184,26 +184,35 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 - `m`: 左后
 - `.`: 右后
 
-保存地图：
+保存地图（一键保存两种格式）：
 
 ```bash
-# 在地图建好后，保存地图
-ros2 run nav2_map_server map_saver_cli -f ~/nav_ws/maps/my_map
+# 在地图建好后，使用脚本一键保存（同时保存占据栅格地图和序列化地图）
+~/nav_ws/src/wheeltec_bringup/scripts/save_map.sh my_home
 ```
+
+> 也可以手动分步保存：
+> ```bash
+> ros2 run nav2_map_server map_saver_cli -f ~/nav_ws/maps/my_home
+> ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/home/bigtruck/nav_ws/maps/my_home_serialized'}"
+> ```
 
 ### 3. 导航模式
 
-使用已建好的地图进行导航：
+使用已建好的地图进行导航（slam_toolbox 自动定位）：
 
 ```bash
-# 启动导航模式（指定地图文件）
-ros2 launch wheeltec_bringup bringup.launch.py mode:=nav map:=~/nav_ws/maps/my_map.yaml
+# 启动导航模式（指定占据栅格地图和序列化地图）
+ros2 launch wheeltec_bringup bringup.launch.py mode:=nav \
+  map:=~/nav_ws/maps/my_home.yaml \
+  serialized_map:=~/nav_ws/maps/my_home_serialized
 ```
 
-在RViz中：
-1. 点击 **2D Pose Estimate** 按钮，在地图上设置机器人初始位置
-2. 点击 **2D Goal Pose** 按钮，设置导航目标点
-3. 机器人将自动规划路径并导航到目标点
+- `map` — 占据栅格地图（`.yaml`），提供给 costmap 使用
+- `serialized_map` — slam_toolbox 序列化地图（不含扩展名），用于自动定位
+
+系统启动后，slam_toolbox 通过 scan matching 自动确定机器人位置和朝向。
+在 RViz 中点击 **2D Goal Pose** 按钮设置导航目标点，机器人将自动规划路径并导航。
 
 ### 4. 单独启动各模块
 
@@ -319,19 +328,22 @@ nav_ws/src/
 │
 └── wheeltec_bringup/         # 启动配置包
     ├── config/
-    │   ├── MID360_config.json       # 激光雷达配置
-    │   ├── pointcloud_to_laserscan.yaml
-    │   ├── slam_params.yaml         # SLAM参数
-    │   └── nav2_params.yaml         # 导航参数 ⚠️需配置robot_radius
+    │   ├── MID360_config.json           # 激光雷达配置
+    │   ├── pointcloud_to_laserscan.yaml # 点云转激光扫描
+    │   ├── slam_params.yaml             # SLAM建图参数
+    │   ├── slam_localization_params.yaml # SLAM定位参数
+    │   └── nav2_params.yaml             # 导航参数 ⚠️需配置robot_radius
     ├── launch/
-    │   ├── bringup.launch.py        # 完整系统启动
-    │   ├── lidar.launch.py          # 激光雷达启动
-    │   ├── slam.launch.py           # SLAM启动
-    │   └── navigation.launch.py     # 导航启动
+    │   ├── bringup.launch.py            # 完整系统启动
+    │   ├── lidar.launch.py              # 激光雷达启动
+    │   ├── slam.launch.py               # SLAM建图启动
+    │   └── navigation.launch.py         # 导航启动（slam_toolbox定位）
+    ├── scripts/
+    │   └── save_map.sh                  # 一键保存地图脚本
     ├── rviz/
-    │   ├── slam.rviz                # 建图RViz配置
-    │   └── navigation.rviz          # 导航RViz配置
-    └── maps/                        # 地图存储目录
+    │   ├── slam.rviz                    # 建图RViz配置
+    │   └── navigation.rviz              # 导航RViz配置
+    └── maps/                            # 地图存储目录
 ```
 
 ## 许可证

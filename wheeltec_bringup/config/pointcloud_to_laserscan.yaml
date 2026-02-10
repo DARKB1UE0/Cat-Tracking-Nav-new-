@@ -1,4 +1,4 @@
-# pointcloud_to_laserscan 参数配置
+# pointcloud_to_laserscan 参数配置（优化版）
 
 pointcloud_to_laserscan_node:
   ros__parameters:
@@ -8,18 +8,19 @@ pointcloud_to_laserscan_node:
     # 转换容差
     transform_tolerance: 0.01
     
-    # 扫描参数
-    min_height: -0.5       # 最小高度 (m)，低于此高度的点被忽略
-    max_height: 1.0        # 最大高度 (m)，高于此高度的点被忽略
+    # 扫描参数 - 只取水平面附近的点（相对于laser_frame）
+    # 激光雷达在 Z=22.5cm，取 [-0.05, 0.05] 范围内的点，避免扫描车体和地面
+    min_height: -0.05      # 最小高度（米），避免地面噪点
+    max_height: 0.05       # 最大高度（米），避免扫描到车体
     
     # 角度范围
     angle_min: -3.14159    # 最小角度 (rad) = -180度
     angle_max: 3.14159     # 最大角度 (rad) = 180度
-    angle_increment: 0.0087 # 角度增量 (rad) ≈ 0.5度
+    angle_increment: 0.004363  # 角度增量 ≈ 0.25度（原0.5度）
     
     # 距离范围
-    range_min: 0.1         # 最小距离 (m)
-    range_max: 30.0        # 最大距离 (m)
+    range_min: 0.4         # 增大最小距离，过滤车身（车体半径~0.25m）
+    range_max: 15.0        # 减小最大距离（原30.0）
     
     # 扫描时间参数
     scan_time: 0.1         # 扫描时间 (s) = 10Hz
@@ -29,3 +30,10 @@ pointcloud_to_laserscan_node:
     
     # 输入点云无穷值处理
     inf_epsilon: 1.0
+    
+    # QoS 设置 - 使用 RELIABLE 以兼容 slam_toolbox 和 RViz
+    qos_overrides:
+      /scan:
+        publisher:
+          reliability: reliable
+          durability: volatile

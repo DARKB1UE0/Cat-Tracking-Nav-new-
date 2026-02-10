@@ -33,9 +33,15 @@ def generate_launch_description():
         description='Full path to map yaml file (required for nav mode)'
     )
     
+    serialized_map_arg = DeclareLaunchArgument(
+        'serialized_map',
+        default_value='',
+        description='Full path to slam_toolbox serialized map (without extension, for nav mode localization)'
+    )
+    
     serial_port_arg = DeclareLaunchArgument(
         'serial_port',
-        default_value='/dev/ttyUSB0',
+        default_value='/dev/ttyACM0',
         description='Serial port for wheeltec driver'
     )
     
@@ -45,12 +51,21 @@ def generate_launch_description():
         description='Launch RViz'
     )
     
+    # 新增：是否使用假里程计（用于没有底盘硬件时测试）
+    use_fake_odom_arg = DeclareLaunchArgument(
+        'use_fake_odom',
+        default_value='false',
+        description='Use fake odometry (for testing without chassis hardware)'
+    )
+    
     # 获取参数值
     use_sim_time = LaunchConfiguration('use_sim_time')
     mode = LaunchConfiguration('mode')
     map_file = LaunchConfiguration('map')
+    serialized_map = LaunchConfiguration('serialized_map')
     serial_port = LaunchConfiguration('serial_port')
     rviz_enabled = LaunchConfiguration('rviz')
+    use_fake_odom = LaunchConfiguration('use_fake_odom')
     
     # RViz配置文件
     slam_rviz_config = os.path.join(bringup_dir, 'rviz', 'slam.rviz')
@@ -64,12 +79,23 @@ def generate_launch_description():
         launch_arguments={'use_sim_time': use_sim_time}.items()
     )
     
-    # 2. 底盘驱动
+    # 2. 底盘驱动（仅在 use_fake_odom=false 时启动）
     driver_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(driver_dir, 'launch', 'driver.launch.py')
         ),
-        launch_arguments={'serial_port': serial_port}.items()
+        launch_arguments={'serial_port': serial_port}.items(),
+        condition=UnlessCondition(use_fake_odom)
+    )
+    
+    # 2b. 假里程计（用于没有底盘硬件时测试）
+    # 发布静态 odom -> base_link 变换
+    fake_odom_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='fake_odom_publisher',
+        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link'],
+        condition=IfCondition(use_fake_odom)
     )
     
     # 3. 激光雷达
@@ -96,7 +122,8 @@ def generate_launch_description():
         ),
         launch_arguments={
             'use_sim_time': use_sim_time,
-            'map': map_file
+            'map': map_file,
+            'serialized_map': serialized_map
         }.items(),
         condition=IfCondition(PythonExpression(["'", mode, "' == 'nav'"]))
     )
@@ -129,10 +156,13 @@ def generate_launch_description():
         use_sim_time_arg,
         mode_arg,
         map_arg,
+        serialized_map_arg,
         serial_port_arg,
         rviz_arg,
+        use_fake_odom_arg,
         description_launch,
         driver_launch,
+        fake_odom_tf,
         lidar_launch,
         slam_launch,
         nav_launch,

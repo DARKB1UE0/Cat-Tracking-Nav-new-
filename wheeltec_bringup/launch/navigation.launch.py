@@ -12,7 +12,6 @@ import os
 def generate_launch_description():
     # 获取包路径
     bringup_dir = get_package_share_directory('wheeltec_bringup')
-    nav2_bringup_dir = get_package_share_directory('nav2_bringup')
     
     # 声明参数
     use_sim_time_arg = DeclareLaunchArgument(
@@ -24,11 +23,18 @@ def generate_launch_description():
     map_file_arg = DeclareLaunchArgument(
         'map',
         default_value='',
-        description='Full path to map yaml file to load'
+        description='Full path to map yaml file to load (for map_server)'
+    )
+    
+    # 序列化地图路径（用于 slam_toolbox 定位，不含扩展名）
+    serialized_map_arg = DeclareLaunchArgument(
+        'serialized_map',
+        default_value='',
+        description='Full path to slam_toolbox serialized map (without extension)'
     )
     
     params_file_arg = DeclareLaunchArgument(
-        'params_file',
+        'nav2_params_file',
         default_value=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
         description='Full path to the Nav2 parameters file'
     )
@@ -42,8 +48,17 @@ def generate_launch_description():
     # 配置参数
     use_sim_time = LaunchConfiguration('use_sim_time')
     map_file = LaunchConfiguration('map')
-    params_file = LaunchConfiguration('params_file')
+    serialized_map = LaunchConfiguration('serialized_map')
+    params_file = LaunchConfiguration('nav2_params_file')
     autostart = LaunchConfiguration('autostart')
+    
+    # 展开地图路径中的 ~ 为用户主目录
+    expanded_map = PythonExpression([
+        "__import__('os').path.expanduser('", map_file, "')"
+    ])
+    expanded_serialized_map = PythonExpression([
+        "__import__('os').path.expanduser('", serialized_map, "')"
+    ])
     
     # 重写参数文件以支持地图文件路径
     configured_params = RewrittenYaml(
@@ -51,22 +66,26 @@ def generate_launch_description():
         root_key='',
         param_rewrites={
             'use_sim_time': use_sim_time,
-            'yaml_filename': map_file
+            'yaml_filename': expanded_map
         },
         convert_types=True
     )
     
-    # Nav2节点组
+    # slam_toolbox 定位模式参数文件
+    slam_localization_params = os.path.join(
+        bringup_dir, 'config', 'slam_localization_params.yaml'
+    )
+    
+    # Nav2 生命周期节点（不包含 slam_toolbox，它不是生命周期节点）
     lifecycle_nodes = [
+        'map_server',
         'controller_server',
         'smoother_server',
         'planner_server',
         'behavior_server',
         'bt_navigator',
         'waypoint_follower',
-        'velocity_smoother',
-        'map_server',
-        'amcl'
+        'velocity_smoother'
     ]
     
     # 控制器服务
@@ -129,7 +148,7 @@ def generate_launch_description():
         ]
     )
     
-    # 地图服务器
+    # 地图服务器（提供占据栅格地图给 costmap）
     map_server = Node(
         package='nav2_map_server',
         executable='map_server',
@@ -137,12 +156,17 @@ def generate_launch_description():
         parameters=[configured_params]
     )
     
-    # AMCL定位
-    amcl = Node(
-        package='nav2_amcl',
-        executable='amcl',
+    # slam_toolbox 定位模式（替代 AMCL，自动确定初始位姿）
+    slam_toolbox_localization = Node(
+        package='slam_toolbox',
+        executable='localization_slam_toolbox_node',
+        name='slam_toolbox',
         output='screen',
-        parameters=[configured_params]
+        parameters=[
+            slam_localization_params,
+            {'use_sim_time': use_sim_time,
+             'map_file_name': expanded_serialized_map}
+        ]
     )
     
     # 生命周期管理器
@@ -161,8 +185,12 @@ def generate_launch_description():
     return LaunchDescription([
         use_sim_time_arg,
         map_file_arg,
+        serialized_map_arg,
         params_file_arg,
         autostart_arg,
+        # 先启动 slam_toolbox 定位（发布 map -> odom 变换）
+        slam_toolbox_localization,
+        # 然后启动 Nav2 节点
         controller_server,
         smoother_server,
         planner_server,
@@ -171,6 +199,5 @@ def generate_launch_description():
         waypoint_follower,
         velocity_smoother,
         map_server,
-        amcl,
         lifecycle_manager
     ])

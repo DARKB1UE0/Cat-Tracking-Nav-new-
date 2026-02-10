@@ -24,4 +24,11 @@ install(DIRECTORY maps/
   OPTIONAL
 )
 
+# Install scripts
+install(PROGRAMS
+  scripts/teleop_keyboard.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
+

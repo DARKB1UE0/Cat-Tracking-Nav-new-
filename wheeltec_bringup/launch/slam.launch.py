@@ -21,7 +21,11 @@ def generate_launch_description():
     # SLAM参数文件
     slam_params_file = os.path.join(bringup_dir, 'config', 'slam_params.yaml')
     
+    # QoS 覆盖文件
+    qos_overrides_file = os.path.join(bringup_dir, 'config', 'qos_overrides.yaml')
+    
     # slam_toolbox节点
+    # 使用 BEST_EFFORT QoS 订阅 /scan 以兼容 pointcloud_to_laserscan
     slam_toolbox_node = Node(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
@@ -30,6 +34,10 @@ def generate_launch_description():
         parameters=[
             slam_params_file,
             {'use_sim_time': LaunchConfiguration('use_sim_time')}
+        ],
+        arguments=[
+            '--ros-args',
+            '--params-file', qos_overrides_file
         ]
     )
     

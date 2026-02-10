@@ -45,6 +45,7 @@ def generate_launch_description():
     )
     
     # pointcloud_to_laserscan节点
+    # 使用 RELIABLE QoS 以兼容 slam_toolbox
     pc2ls_node = Node(
         package='pointcloud_to_laserscan',
         executable='pointcloud_to_laserscan_node',
@@ -54,7 +55,9 @@ def generate_launch_description():
         remappings=[
             ('cloud_in', '/livox/lidar'),
             ('scan', '/scan')
-        ]
+        ],
+        # 使用 --ros-args 强制设置 publisher QoS
+        arguments=['--ros-args', '-p', 'reliability:=reliable']
     )
     
     return LaunchDescription([
