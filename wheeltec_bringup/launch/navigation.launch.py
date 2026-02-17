@@ -23,14 +23,7 @@ def generate_launch_description():
     map_file_arg = DeclareLaunchArgument(
         'map',
         default_value='',
-        description='Full path to map yaml file to load (for map_server)'
-    )
-    
-    # 序列化地图路径（用于 slam_toolbox 定位，不含扩展名）
-    serialized_map_arg = DeclareLaunchArgument(
-        'serialized_map',
-        default_value='',
-        description='Full path to slam_toolbox serialized map (without extension)'
+        description='Full path to map yaml file to load'
     )
     
     params_file_arg = DeclareLaunchArgument(
@@ -48,16 +41,12 @@ def generate_launch_description():
     # 配置参数
     use_sim_time = LaunchConfiguration('use_sim_time')
     map_file = LaunchConfiguration('map')
-    serialized_map = LaunchConfiguration('serialized_map')
     params_file = LaunchConfiguration('nav2_params_file')
     autostart = LaunchConfiguration('autostart')
     
     # 展开地图路径中的 ~ 为用户主目录
     expanded_map = PythonExpression([
         "__import__('os').path.expanduser('", map_file, "')"
-    ])
-    expanded_serialized_map = PythonExpression([
-        "__import__('os').path.expanduser('", serialized_map, "')"
     ])
     
     # 重写参数文件以支持地图文件路径
@@ -71,14 +60,10 @@ def generate_launch_description():
         convert_types=True
     )
     
-    # slam_toolbox 定位模式参数文件
-    slam_localization_params = os.path.join(
-        bringup_dir, 'config', 'slam_localization_params.yaml'
-    )
-    
-    # Nav2 生命周期节点（不包含 slam_toolbox，它不是生命周期节点）
+    # Nav2 生命周期节点 - map_server 和 amcl 先启动
     lifecycle_nodes = [
         'map_server',
+        'amcl',
         'controller_server',
         'smoother_server',
         'planner_server',
@@ -88,21 +73,26 @@ def generate_launch_description():
         'velocity_smoother'
     ]
     
-    # 控制器服务
+    # 控制器服务（输出到 cmd_vel_nav，经 velocity_smoother 平滑后发到 cmd_vel_smoothed）
     controller_server = Node(
         package='nav2_controller',
         executable='controller_server',
         output='screen',
-        parameters=[configured_params]
+        parameters=[configured_params],
+        remappings=[('cmd_vel', 'cmd_vel_nav')]
     )
     
-    # 平滑器服务
+    # 平滑器服务 (输入 cmd_vel_nav -> 输出 cmd_vel_smoothed)
     smoother_server = Node(
         package='nav2_smoother',
         executable='smoother_server',
         output='screen',
-        parameters=[configured_params]
+        parameters=[configured_params],
+        remappings=[('cmd_vel', 'cmd_vel')] # Changed to direct cmd_vel output
     )
+    
+    # 速度指令反转器已移除
+    # 直接使用 cmd_vel 与 Teleop 保持一致
     
     # 规划器服务
     planner_server = Node(
@@ -117,7 +107,8 @@ def generate_launch_description():
         package='nav2_behaviors',
         executable='behavior_server',
         output='screen',
-        parameters=[configured_params]
+        parameters=[configured_params],
+        remappings=[('cmd_vel', 'cmd_vel_nav')]
     )
     
     # 行为树导航器
@@ -148,7 +139,7 @@ def generate_launch_description():
         ]
     )
     
-    # 地图服务器（提供占据栅格地图给 costmap）
+    # 地图服务器
     map_server = Node(
         package='nav2_map_server',
         executable='map_server',
@@ -156,17 +147,12 @@ def generate_launch_description():
         parameters=[configured_params]
     )
     
-    # slam_toolbox 定位模式（替代 AMCL，自动确定初始位姿）
-    slam_toolbox_localization = Node(
-        package='slam_toolbox',
-        executable='localization_slam_toolbox_node',
-        name='slam_toolbox',
+    # AMCL 定位（启动后在 RViz 中用 2D Pose Estimate 设置初始位置）
+    amcl = Node(
+        package='nav2_amcl',
+        executable='amcl',
         output='screen',
-        parameters=[
-            slam_localization_params,
-            {'use_sim_time': use_sim_time,
-             'map_file_name': expanded_serialized_map}
-        ]
+        parameters=[configured_params]
     )
     
     # 生命周期管理器
@@ -185,12 +171,8 @@ def generate_launch_description():
     return LaunchDescription([
         use_sim_time_arg,
         map_file_arg,
-        serialized_map_arg,
         params_file_arg,
         autostart_arg,
-        # 先启动 slam_toolbox 定位（发布 map -> odom 变换）
-        slam_toolbox_localization,
-        # 然后启动 Nav2 节点
         controller_server,
         smoother_server,
         planner_server,
@@ -198,6 +180,8 @@ def generate_launch_description():
         bt_navigator,
         waypoint_follower,
         velocity_smoother,
+
         map_server,
+        amcl,
         lifecycle_manager
     ])

@@ -27,8 +27,11 @@ install(DIRECTORY maps/
 # Install scripts
 install(PROGRAMS
   scripts/teleop_keyboard.py
+  scripts/cmd_vel_inverter.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 
 ament_package()
 

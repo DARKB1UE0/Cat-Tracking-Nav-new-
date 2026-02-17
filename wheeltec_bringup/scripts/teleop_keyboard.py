@@ -21,10 +21,8 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
-
-# 按键映射
 KEY_BINDINGS = {
-    'w': (1.0, 0.0, 0.0),   # 前进: (vx, vy, vz)
+    'w': (1.0, 0.0, 0.0),   # 前进
     's': (-1.0, 0.0, 0.0),  # 后退
     'a': (0.0, 1.0, 0.0),   # 左移
     'd': (0.0, -1.0, 0.0),  # 右移
@@ -64,8 +62,8 @@ class TeleopKeyboard(Node):
         super().__init__('teleop_keyboard')
         
         # 声明参数
-        self.declare_parameter('linear_speed', 0.03)
-        self.declare_parameter('angular_speed', 0.05)
+        self.declare_parameter('linear_speed', 1)
+        self.declare_parameter('angular_speed', 1)
         self.declare_parameter('publish_rate', 50.0)  # 发送频率 Hz
         
         self.linear_speed = self.get_parameter('linear_speed').value

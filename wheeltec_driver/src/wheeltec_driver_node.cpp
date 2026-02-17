@@ -116,11 +116,14 @@ private:
    */
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
-    // 限制速度
+    // 限制速度（协议层已处理方向反转）
+    // 限制速度（协议层已处理方向反转） - 恢复正向控制
     target_vx_ = std::clamp(msg->linear.x, -max_linear_velocity_, max_linear_velocity_);
     target_vy_ = std::clamp(msg->linear.y, -max_linear_velocity_, max_linear_velocity_);
     target_vz_ = std::clamp(msg->angular.z, -max_angular_velocity_, max_angular_velocity_);
-    
+
+    // Debug Log: Print received command
+    //RCLCPP_INFO(this->get_logger(), "Driver Recv: vx=%.3f, vy=%.3f, vz=%.3f", target_vx_, target_vy_, target_vz_);    
     last_cmd_time_ = this->now();
   }
 
@@ -207,9 +210,16 @@ private:
 
     // 更新里程计
     // 麦克纳姆轮运动学：可以全向移动
-    double delta_x = (state.vx * std::cos(theta_) - state.vy * std::sin(theta_)) * dt;
-    double delta_y = (state.vx * std::sin(theta_) + state.vy * std::cos(theta_)) * dt;
-    double delta_theta = state.vz * dt;
+    // 麦克纳姆轮运动学：可以全向移动
+    // 注意：协议层已输出正确方向，此处直接使用
+    // 注意：协议层已输出正确方向，此处直接使用
+    double effective_vx = state.vx;
+    double effective_vy = state.vy;
+    double effective_vz = state.vz;
+
+    double delta_x = (effective_vx * std::cos(theta_) - effective_vy * std::sin(theta_)) * dt;
+    double delta_y = (effective_vx * std::sin(theta_) + effective_vy * std::cos(theta_)) * dt;
+    double delta_theta = effective_vz * dt;
 
     x_ += delta_x;
     y_ += delta_y;
