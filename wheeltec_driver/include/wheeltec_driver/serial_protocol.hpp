@@ -143,7 +143,7 @@ inline std::array<uint8_t, TX_FRAME_LENGTH> build_tx_frame(
   // 转换为mm/s和mrad/s
   int16_t vx_mm = static_cast<int16_t>(std::round(vx * 3.5));
   int16_t vy_mm = static_cast<int16_t>(std::round(vy * 3.5));
-  int16_t vz_mrad = static_cast<int16_t>(std::round(vz * 3.5));
+  int16_t vz_mrad = static_cast<int16_t>(std::round(vz * 10.0));
   
   frame[0] = FRAME_HEADER;
   frame[1] = static_cast<uint8_t>(mode);
