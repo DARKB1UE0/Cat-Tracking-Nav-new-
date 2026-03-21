@@ -161,15 +161,25 @@ source ~/nav_ws/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
 
-### 2. 建图模式
+### 2. 建图与导航模式
 
-启动完整系统进行建图：
+在最新的系统中，您可以在一个终端中一次性启动底层驱动、雷达、建图 (SLAM) 和导航 (Nav2) 功能。该模式下不需要预先加载已经建好的静态地图，而是依赖 SLAM 实时建图提供坐标参考，并且支持随着地图的扩展同步进行目标点导航。
+
+启动完整的综合模式：
 
 ```bash
-# 启动建图模式
-ros2 launch wheeltec_bringup bringup.launch.py mode:=slam
+ros2 launch wheeltec_bringup slam_navigation.launch.py
+```
 
-# 在另一个终端，使用键盘遥控小车移动建图
+> **注意：此模式自带 RViz 面板。** 在 RViz 面板中，可以直接使用 `2D Goal Pose` 箭头来指引车辆移动。
+
+如果你处于没有硬件连接的环境中（如测试算法），可以通过激活 `Fake Odometry` 跳过硬件检测：
+```bash
+ros2 launch wheeltec_bringup slam_navigation.launch.py use_fake_odom:=true
+```
+
+或者使用键盘遥控小车移动建图：
+```bash
 ros2 run wheeltec_bringup teleop_keyboard.py
 ```
 
@@ -211,6 +221,14 @@ ros2 launch wheeltec_bringup bringup.launch.py mode:=nav \
 
 系统启动后，slam_toolbox 通过 scan matching 自动确定机器人位置和朝向。
 在 RViz 中点击 **2D Goal Pose** 按钮设置导航目标点，机器人将自动规划路径并导航。
+
+
+
+```bash
+# 直接启动slam导航无需建图
+ros2 launch wheeltec_bringup slam_navigation.launch.py
+```
+
 
 ### 4. 单独启动各模块
 
