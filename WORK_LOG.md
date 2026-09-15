@@ -113,3 +113,40 @@
 
 - [ ] 将检测节点输出的像素中心和深度转换为相机三维点并发布 `/cat_target_camera`。
 - [ ] 在 ROS 2 中启动节点并检查 RViz 标记位置。
+
+### 20260915-04：整合云台姿态与双目目标地图坐标
+
+| 字段 | 内容 |
+|------|------|
+| 日期 | 2026-09-15（北京时间） |
+| 记录人 | Codex |
+| 类型 | 功能 |
+| 模块 | 云台 USB 状态、相机 TF、目标标注 |
+| 状态 | 待验证 |
+| 关联记录 | 20260915-03 |
+
+#### 目标与背景
+
+摄像头安装在云台上，视线方向随云台 yaw/pitch 改变，需要把下位机 USB 回传的云台姿态接入相机 TF，再将双目目标位置标注到 RViz 的 `map`。
+
+#### 工作内容
+
+- 修改 `ros2_target_marker.py`，订阅 `/gimbal/status` 获取 yaw/pitch。
+- 动态发布 `base_link -> camera_link` TF，使摄像头朝向跟随云台角度。
+- 保留 `/cat_target_camera` 三维点到 `map` 的 TF 转换和 `/target_marker` 发布。
+- 相机安装平移默认使用 x=0.20 m、z=0.35 m，可通过参数调整。
+
+#### 验证与结果
+
+- 已完成代码级链路整合；尚未连接真实 USB、TF、RealSense 和 RViz 验证姿态方向。
+
+#### 问题与限制
+
+- 必须继续提供 `camera_link -> camera_color_optical_frame` 的固定光学坐标变换。
+- yaw/pitch 正负方向和相机安装零位需要实车标定；当前四元数计算采用 yaw 绕 z、pitch 绕 y 的约定。
+
+#### 下一步
+
+- [ ] 发布并检查相机光学坐标系静态 TF。
+- [ ] 用 `tf2_echo` 验证云台转动时 camera TF 方向。
+- [ ] 由 RealSense 深度生成 `/cat_target_camera` 后检查 RViz 标记位置。
