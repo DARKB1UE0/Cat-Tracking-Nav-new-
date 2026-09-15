@@ -77,3 +77,39 @@
 - [ ] 用实车测量 yaw/pitch 初始零位并写入配置。
 - [ ] 接入 ROS TF，验证世界坐标目标转换。
 - [ ] 完成目标点、云台角度和电机反馈的闭环联调。
+
+### 20260915-03：双目目标位置在 RViz 地图标注
+
+| 字段 | 内容 |
+|------|------|
+| 日期 | 2026-09-15（北京时间） |
+| 记录人 | Codex |
+| 类型 | 功能 |
+| 模块 | RealSense 双目、ROS 2 TF、RViz |
+| 状态 | 待验证 |
+| 关联记录 | 20260915-02 |
+
+#### 目标与背景
+
+利用双目相机得到目标距离和相机坐标，在 RViz 的 `map` 坐标系中标注目标位置。
+
+#### 工作内容
+
+- 新增 `Cat-Tracking-RealSense/ros2_target_marker.py`。
+- 节点订阅 `/cat_target_camera`（`geometry_msgs/msg/PointStamped`），点坐标应为相机光学坐标系，单位米。
+- 通过 TF 查找相机坐标系到 `map` 的变换，并发布 `/target_marker`（`visualization_msgs/msg/Marker`）供 RViz 显示。
+- 使用 18 cm 红色球体标注目标，1 秒无更新自动消失。
+
+#### 验证与结果
+
+- 已完成静态接口检查；未连接 RealSense、TF 树和实际 RViz。
+
+#### 问题与限制
+
+- 必须存在 `map -> ... -> camera_color_optical_frame` 的 TF 链。
+- 双目节点需要发布带距离的三维点，不能只发布二维像素。
+
+#### 下一步
+
+- [ ] 将检测节点输出的像素中心和深度转换为相机三维点并发布 `/cat_target_camera`。
+- [ ] 在 ROS 2 中启动节点并检查 RViz 标记位置。
